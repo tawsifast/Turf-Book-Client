@@ -8,7 +8,7 @@ export interface Turf {
   location: string;
   pricePerHour: number;
   sportType: SportType;
-  images: string[];
+  image: string[];
   rating: number;
   isAvailable: boolean;
   description: string;

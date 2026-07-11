@@ -12,7 +12,7 @@ export default function TurfCard({ turf }: TurfCardProps) {
       {/* Card Image Area */}
       <div className="relative h-48 w-full overflow-hidden bg-slate-100">
         <Image
-          src={turf.images[0]}
+          src={turf.image}
           alt={turf.name}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"

@@ -1,27 +1,59 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { mockTurfs } from "@/lib/mockData";
+import { useState, useMemo, useEffect } from "react";
+// mockTurfs আর প্রয়োজন নেই, তবে ব্যাকআপ হিসেবে রাখা যেতে পারে
 import TurfCard from "@/components/shared/TurfCard";
 import type { SportType } from "@/types/turf";
 import Link from "next/link";
 
 export default function ExploreTurfsPage() {
-  // স্টেটস (States)
+  // ডাটাবেজ থেকে আসা ডাটা রাখার জন্য নতুন স্টেট
+  const [turfs, setTurfs] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // ফিল্টার স্টেটস
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedSport, setSelectedSport] = useState<SportType | "all">("all");
   const [maxPrice, setMaxPrice] = useState<number>(1500);
-  const [sortBy, setSortBy] = useState<"rating" | "priceLow" | "priceHigh">(
-    "rating",
-  );
+  const [sortBy, setSortBy] = useState<"rating" | "priceLow" | "priceHigh">("rating");
 
-  // ফিল্টারিং এবং সর্টিং লজিক (useMemo ব্যবহার করা হয়েছে পারফরম্যান্সের জন্য)
+  // ⚡ ব্যাকএন্ড থেকে GET Request এর মাধ্যমে ডাটা নিয়ে আসা
+  useEffect(() => {
+    const fetchTurfs = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/allTurfs");
+        const resData = await response.json();
+        
+        if (resData.success) {
+        
+          const normalizedData = resData.data.map((item: any) => ({
+            ...item,
+            name: item.name || item.title, 
+            pricePerHour: item.pricePerHour || item.price, 
+            rating: item.rating || 4.5, 
+          }));
+          setTurfs(normalizedData);
+        }
+      } catch (error) {
+        console.error("Failed to fetch turfs:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTurfs();
+  }, []);
+
+  // ফিল্টারিং এবং সর্টিং লজিক (এখন mockTurfs এর জায়গায় রিয়েল 'turfs' স্টেট ব্যবহার হবে)
   const filteredAndSortedTurfs = useMemo(() => {
-    return mockTurfs
+    return turfs
       .filter((turf) => {
+        const nameToSearch = turf.name || "";
+        const locationToSearch = turf.location || "";
+        
         const matchesSearch =
-          turf.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          turf.location.toLowerCase().includes(searchQuery.toLowerCase());
+          nameToSearch.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          locationToSearch.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesSport =
           selectedSport === "all" || turf.sportType === selectedSport;
         const matchesPrice = turf.pricePerHour <= maxPrice;
@@ -29,20 +61,15 @@ export default function ExploreTurfsPage() {
         return matchesSearch && matchesSport && matchesPrice;
       })
       .sort((a, b) => {
-        if (sortBy === "rating") return b.rating - a.rating; // সর্বোচ্চ রেটিং আগে
-        if (sortBy === "priceLow") return a.pricePerHour - b.pricePerHour; // কম দাম আগে
-        if (sortBy === "priceHigh") return b.pricePerHour - a.pricePerHour; // বেশি দাম আগে
+        if (sortBy === "rating") return b.rating - a.rating;
+        if (sortBy === "priceLow") return a.pricePerHour - b.pricePerHour;
+        if (sortBy === "priceHigh") return b.pricePerHour - a.pricePerHour;
         return 0;
       });
-  }, [searchQuery, selectedSport, maxPrice, sortBy]);
+  }, [turfs, searchQuery, selectedSport, maxPrice, sortBy]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      {/* Page Header */}
-      {/* <div className="mb-8">
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Explore Sports Arenas</h1>
-        <p className="text-slate-500 text-sm mt-1">Find and book the finest turfs matching your budget and schedule.</p>
-      </div> */}
       {/* Page Header with Action Button */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
@@ -116,7 +143,7 @@ export default function ExploreTurfsPage() {
           </div>
         </div>
 
-        {/* 4. Price Range Filter (Second Field Constraint) */}
+        {/* 4. Price Range Filter */}
         <div className="border-t border-slate-100 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="w-full sm:max-w-xs flex flex-col gap-1.5">
             <div className="flex justify-between text-xs font-bold text-slate-600 uppercase tracking-wider">
@@ -128,7 +155,7 @@ export default function ExploreTurfsPage() {
             <input
               type="range"
               min="400"
-              max="1500"
+              max="5000" // রেঞ্জ ১০০০ টাকার বেশি এরিনার জন্য ৫০০০ পর্যন্ত বাড়িয়ে দেওয়া হলো
               step="50"
               value={maxPrice}
               onChange={(e) => setMaxPrice(Number(e.target.value))}
@@ -147,8 +174,14 @@ export default function ExploreTurfsPage() {
         </div>
       </div>
 
-      {/* Turf Listing Grid */}
-      {filteredAndSortedTurfs.length > 0 ? (
+      {/* Loading State Handle */}
+      {isLoading ? (
+        <div className="text-center py-20">
+          <span className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin inline-block"></span>
+          <p className="text-slate-500 text-sm mt-2">Loading Arenas...</p>
+        </div>
+      ) : filteredAndSortedTurfs.length > 0 ? (
+        /* Turf Listing Grid */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredAndSortedTurfs.map((turf) => (
             <TurfCard key={turf._id} turf={turf} />
