@@ -1,6 +1,5 @@
-// src/components/shared/TurfCard.tsx
 import Image from "next/image";
-import Link from "next/link";
+import Link from "next/link"; // 👈 ইমপোর্ট করো
 import type { Turf } from "@/types/turf";
 
 interface TurfCardProps {
@@ -9,54 +8,46 @@ interface TurfCardProps {
 
 export default function TurfCard({ turf }: TurfCardProps) {
   return (
-    // white bg, soft border, and clean shadow-sm on hover
-    <div className="group relative border border-slate-200 bg-white rounded-2xl overflow-hidden hover:border-emerald-500 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 flex flex-col h-full">
-      
-      {/* Image Section */}
-      <div className="relative w-full h-48 overflow-hidden bg-slate-100">
+    <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col group">
+      {/* Card Image Area */}
+      <div className="relative h-48 w-full overflow-hidden bg-slate-100">
         <Image
-          src={turf.images[0] ?? "/turfs/placeholder.jpg"}
+          src={turf.images[0]}
           alt={turf.name}
           fill
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
+          className="object-cover group-hover:scale-105 transition-transform duration-300"
         />
-        <span className="absolute top-3 right-3 bg-white/90 backdrop-blur-md text-xs font-semibold px-2.5 py-1 rounded-full text-emerald-700 border border-slate-200 shadow-sm capitalize">
+        <span className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider">
           {turf.sportType}
         </span>
       </div>
 
-      {/* Content Section */}
-      <div className="p-5 flex flex-col flex-grow">
-        <div className="flex justify-between items-start mb-2">
-          <h3 className="font-bold text-lg text-slate-800 group-hover:text-emerald-600 transition-colors line-clamp-1">
-            {turf.name}
-          </h3>
-          <div className="flex items-center gap-1 text-amber-500 text-sm font-semibold">
-            <span>★</span>
-            <span>{turf.rating}</span>
+      {/* Card Body Contents */}
+      <div className="p-5 flex-grow flex flex-col justify-between space-y-4">
+        <div>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="font-bold text-slate-800 text-base tracking-tight line-clamp-1">{turf.name}</h3>
+            <div className="flex items-center gap-0.5 text-amber-600 font-bold text-xs bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100">
+              ⭐ {turf.rating.toFixed(1)}
+            </div>
           </div>
+          <p className="text-slate-400 text-xs mt-1 flex items-center gap-0.5">
+            📍 {turf.location}
+          </p>
         </div>
 
-        <p className="text-slate-500 text-xs flex items-center gap-1 mb-3">
-          📍 {turf.location}
-        </p>
-
-        <p className="text-slate-600 text-sm line-clamp-2 mb-4 flex-grow">
-          {turf.description}
-        </p>
-
-        {/* Action / Price Section */}
-        <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-auto">
+        <div className="flex items-center justify-between pt-3 border-t border-slate-100">
           <div>
-            <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Per Hour</p>
-            <p className="text-lg font-extrabold text-emerald-600">৳{turf.pricePerHour}</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Per Hour</p>
+            <p className="text-slate-900 font-black text-lg">৳{turf.pricePerHour}</p>
           </div>
           
-          <Link
-            href={`/turfs/${turf._id}`}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-4 py-2.5 rounded-xl transition-all duration-200 shadow-md shadow-emerald-600/10 hover:shadow-emerald-600/20"
+          {/* dynamic Route Link button */}
+          <Link 
+            href={`/turfs/${turf._id}`} 
+            className="bg-slate-900 hover:bg-emerald-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-colors duration-200"
           >
-            View Details
+            Details
           </Link>
         </div>
       </div>

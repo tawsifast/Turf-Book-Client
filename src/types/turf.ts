@@ -12,7 +12,7 @@ export interface Turf {
   rating: number;
   isAvailable: boolean;
   description: string;
-  amenities: string[]; // যেমন: Floodlights, Changing Room, Parking (গর্জিয়াস ডিজাইনের জন্য)
+//   amenities: string[]; // যেমন: Floodlights, Changing Room, Parking (গর্জিয়াস ডিজাইনের জন্য)
   ownerId: string;
   createdAt: string;
 }
