@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export default function Hero() {
   return (
-    <section className="relative h-[65vh] min-h-[450px] w-full bg-gradient-to-tr from-emerald-50 via-slate-50 to-emerald-100/50 flex items-center overflow-hidden border-b border-slate-100">
+    <section className="relative h-[65vh] min-h-112.5 w-full bg-linear-to-tr from-emerald-50 via-slate-50 to-emerald-100/50 flex items-center overflow-hidden border-b border-slate-100">
       
       {/* Background Subtle Shapes for Premium Look */}
       <div className="absolute top-1/4 left-10 w-72 h-72 bg-emerald-300/20 rounded-full blur-3xl pointer-events-none" />
@@ -20,7 +20,7 @@ export default function Hero() {
           {/* Headline */}
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-none mb-6">
             Find and Book Your <br />
-            Perfect <span className="text-emerald-600 bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Sports Turf</span> Instantly
+            Perfect <span className="text-emerald-600 bg-linear-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Sports Turf</span> Instantly
           </h1>
 
           {/* Description */}

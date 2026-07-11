@@ -1,9 +1,9 @@
 // src/components/shared/TurfCardSkeleton.tsx
 export default function TurfCardSkeleton() {
   return (
-    <div className="border border-slate-200 bg-white rounded-2xl overflow-hidden animate-pulse h-[380px] flex flex-col">
+    <div className="border border-slate-200 bg-white rounded-2xl overflow-hidden animate-pulse h-95 flex flex-col">
       <div className="w-full h-48 bg-slate-200" />
-      <div className="p-5 flex-grow flex flex-col gap-3">
+      <div className="p-5 grow flex flex-col gap-3">
         <div className="h-6 bg-slate-200 rounded-md w-3/4" />
         <div className="h-4 bg-slate-200 rounded-md w-1/2" />
         <div className="h-12 bg-slate-200 rounded-md w-full mt-2" />

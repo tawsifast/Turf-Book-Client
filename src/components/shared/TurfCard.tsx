@@ -23,10 +23,12 @@ export default function TurfCard({ turf }: TurfCardProps) {
       </div>
 
       {/* Card Body Contents */}
-      <div className="p-5 flex-grow flex flex-col justify-between space-y-4">
+      <div className="p-5 grow flex flex-col justify-between space-y-4">
         <div>
           <div className="flex items-center justify-between gap-2">
-            <h3 className="font-bold text-slate-800 text-base tracking-tight line-clamp-1">{turf.name}</h3>
+            <h3 className="font-bold text-slate-800 text-base tracking-tight line-clamp-1">
+              {turf.name}
+            </h3>
             <div className="flex items-center gap-0.5 text-amber-600 font-bold text-xs bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100">
               ⭐ {turf.rating.toFixed(1)}
             </div>
@@ -38,13 +40,17 @@ export default function TurfCard({ turf }: TurfCardProps) {
 
         <div className="flex items-center justify-between pt-3 border-t border-slate-100">
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Per Hour</p>
-            <p className="text-slate-900 font-black text-lg">৳{turf.pricePerHour}</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              Per Hour
+            </p>
+            <p className="text-slate-900 font-black text-lg">
+              ৳{turf.pricePerHour}
+            </p>
           </div>
-          
+
           {/* dynamic Route Link button */}
-          <Link 
-            href={`/turfs/${turf._id}`} 
+          <Link
+            href={`/turfs/${turf._id}`}
             className="bg-slate-900 hover:bg-emerald-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-colors duration-200"
           >
             Details

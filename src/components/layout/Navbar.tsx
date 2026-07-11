@@ -1,32 +1,71 @@
-
 "use client";
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Menu, X, LogOut } from "lucide-react";
+import { Avatar } from "@heroui/react";
+import { authClient } from "@/lib/auth-client";
 
 export default function Navbar() {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
-  // 💡 Better-Auth ইন্টিগ্রেশনের আগে টেস্ট করার জন্য এটাকে true/false করে দেখতে পারো
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  // ⚡ Better-Auth এর রিয়েল সেশন এবং ইউজার ডাটা রিড করা
+  const { data: session, isPending } = authClient.useSession();
+  const isLoggedIn = !!session;
+  const user = session?.user as
+    | { role?: string; name: string; image?: string | null | undefined }
+    | undefined;
+  console.log(user?.role, "role");
 
-  // রিকোয়ারমেন্ট অনুযায়ী রুটস
+  // ১. পাবলিক রুটস (লগআউট অবস্থায় ৩টি রুট)
   const publicRoutes = [
     { name: "Home", path: "/" },
     { name: "Explore Turfs", path: "/turfs" },
     { name: "About Us", path: "/about" },
   ];
 
-  const privateRoutes = [
+  // ২. জেনারেল ইউজারদের রুটস (কমপক্ষে ৫টি রুট)
+  const privateUserRoutes = [
     { name: "Home", path: "/" },
     { name: "Explore Turfs", path: "/turfs" },
     { name: "Bookings", path: "/bookings" },
-    { name: "Add Turf", path: "/items/add" },
-    { name: "Manage Turfs", path: "/items/manage" },
+    { name: "Add Turf", path: "/turfs/add" },
+    { name: "Manage Turfs", path: "/turfs/manage" },
   ];
 
-  const activeRoutes = isLoggedIn ? privateRoutes : publicRoutes;
+  // ৩. অ্যাডমিন ইউজারদের রুটস (যদি রোল admin হয়)
+  const adminRoutes = [
+    { name: "Home", path: "/" },
+    { name: "Explore Turfs", path: "/turfs" },
+    { name: "Admin Dashboard", path: "/admin/dashboard" },
+    { name: "Add Turf", path: "/turfs/add" },
+    { name: "Manage Turfs", path: "/turfs/manage" },
+  ];
+
+  // ⚡ রোল অনুযায়ী একটিভ রুটস সিলেক্ট করা
+  let activeRoutes = publicRoutes; // ডিফল্ট পাবলিক
+
+  if (isLoggedIn && user) {
+    if (user.role === "admin") {
+      activeRoutes = adminRoutes;
+    } else {
+      activeRoutes = privateUserRoutes;
+    }
+  }
+
+  // লগআউট হ্যান্ডলার
+  const handleLogout = async () => {
+    await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          setIsOpen(false);
+          router.push("/");
+        },
+      },
+    });
+  };
 
   return (
     <nav className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-slate-200">
@@ -56,15 +95,49 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Action Buttons */}
+          {/* Action Buttons (Desktop) */}
           <div className="hidden md:flex items-center gap-4">
-            {isLoggedIn ? (
-              <button
-                onClick={() => setIsLoggedIn(false)}
-                className="text-sm font-semibold text-rose-600 hover:bg-rose-50 px-4 py-2 rounded-xl transition"
-              >
-                Logout
-              </button>
+            {isPending ? (
+              <div className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-emerald-600 animate-spin" />
+            ) : isLoggedIn && user ? (
+              <div className="flex items-center gap-4">
+                {/* Welcome Message, Role Tag & Avatar */}
+                <div className="flex items-center gap-2 border-r border-slate-200 pr-4">
+                  <div className="text-right">
+                    {/* অ্যাডমিন নাকি ইউজার সেটি চেনার জন্য একটি ছোট ব্যাজ বা টেক্সট */}
+                    <span
+                      className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                        user.role === "admin"
+                          ? "bg-rose-100 text-rose-600"
+                          : "bg-emerald-100 text-emerald-600"
+                      }`}
+                    >
+                      {user.role}
+                    </span>
+                    <p className="text-sm font-bold text-slate-800 mt-0.5">
+                      {user.name}
+                    </p>
+                  </div>
+                  <Avatar>
+                    <Avatar.Image
+                      referrerPolicy="no-referrer"
+                      alt={user?.name}
+                      src={user?.image}
+                    />
+                    <Avatar.Fallback className="text-zinc-950 font-bold">
+                      {user?.name.charAt(0)}
+                    </Avatar.Fallback>
+                  </Avatar>
+                </div>
+
+                <button
+                  onClick={handleLogout}
+                  className="text-sm font-semibold text-rose-600 hover:bg-rose-50 px-3 py-2 rounded-xl transition flex items-center gap-1.5"
+                >
+                  <LogOut size={16} />
+                  Logout
+                </button>
+              </div>
             ) : (
               <>
                 <Link
@@ -102,6 +175,30 @@ export default function Navbar() {
       {/* Mobile Menu Panel */}
       {isOpen && (
         <div className="md:hidden bg-white border-b border-slate-200 px-4 pt-2 pb-4 space-y-2">
+          {isLoggedIn && user && (
+            <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl my-2 border border-slate-100">
+              <Avatar>
+                <Avatar.Image
+                  referrerPolicy="no-referrer"
+                  alt={user?.name}
+                  src={user?.image}
+                />
+                <Avatar.Fallback className="text-zinc-950 font-bold">
+                  {user?.name.charAt(0)}
+                </Avatar.Fallback>
+              </Avatar>
+              <div>
+                <p className="text-xs text-slate-400 font-medium capitalize">
+                  Logged in as{" "}
+                  <span className="font-bold text-slate-600">
+                    ({user.role})
+                  </span>
+                </p>
+                <p className="text-sm font-black text-slate-800">{user.name}</p>
+              </div>
+            </div>
+          )}
+
           {activeRoutes.map((route) => (
             <Link
               key={route.path}
@@ -112,18 +209,17 @@ export default function Navbar() {
               {route.name}
             </Link>
           ))}
+
           <div className="pt-4 border-t border-slate-100 flex flex-col gap-2">
-            {isLoggedIn ? (
+            {!isPending && isLoggedIn ? (
               <button
-                onClick={() => {
-                  setIsLoggedIn(false);
-                  setIsOpen(false);
-                }}
-                className="w-full text-center font-semibold text-rose-600 bg-rose-50 py-2.5 rounded-xl"
+                onClick={handleLogout}
+                className="w-full text-center font-bold text-rose-600 bg-rose-50 py-2.5 rounded-xl flex items-center justify-center gap-2"
               >
+                <LogOut size={16} />
                 Logout
               </button>
-            ) : (
+            ) : !isPending ? (
               <>
                 <Link
                   href="/login"
@@ -140,7 +236,7 @@ export default function Navbar() {
                   Get Started
                 </Link>
               </>
-            )}
+            ) : null}
           </div>
         </div>
       )}

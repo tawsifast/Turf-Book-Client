@@ -36,9 +36,9 @@ export default function TurfDetailsPage({ params }: TurfDetailsProps) {
         
         {/* Left 2 Columns: Image & Details */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="relative h-[300px] sm:h-[450px] w-full rounded-3xl overflow-hidden shadow-sm">
+          <div className="relative h-75 sm:h-112.5 w-full rounded-3xl overflow-hidden shadow-sm">
             <Image
-              src={turf.image}
+              src={turf.images[0]}
               alt={turf.name}
               fill
               className="object-cover"
