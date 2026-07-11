@@ -1,41 +1,65 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-// mockTurfs আর প্রয়োজন নেই, তবে ব্যাকআপ হিসেবে রাখা যেতে পারে
 import TurfCard from "@/components/shared/TurfCard";
-import type { SportType } from "@/types/turf";
+import type { SportType, Turf } from "@/types/turf";
 import Link from "next/link";
 
-export default function ExploreTurfsPage() {
-  // ডাটাবেজ থেকে আসা ডাটা রাখার জন্য নতুন স্টেট
-  const [turfs, setTurfs] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+// ব্যাকএন্ড থেকে ঠিক যে shape এ ডাটা আসে
+interface RawTurfDocument {
+  _id: string;
+  title: string;
+  location: string;
+  sportType: SportType;
+  price: number;
+  image: string;
+  description: string;
+  ownerName: string;
+  ownerEmail: string;
+}
 
-  // ফিল্টার স্টেটস
+export default function ExploreTurfsPage() {
+  const [turfs, setTurfs] = useState<Turf[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [hasError, setHasError] = useState<boolean>(false);
+
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedSport, setSelectedSport] = useState<SportType | "all">("all");
   const [maxPrice, setMaxPrice] = useState<number>(1500);
-  const [sortBy, setSortBy] = useState<"rating" | "priceLow" | "priceHigh">("rating");
+  const [sortBy, setSortBy] = useState<"rating" | "priceLow" | "priceHigh">(
+    "rating",
+  );
 
-  // ⚡ ব্যাকএন্ড থেকে GET Request এর মাধ্যমে ডাটা নিয়ে আসা
   useEffect(() => {
-    const fetchTurfs = async () => {
+    const fetchTurfs = async (): Promise<void> => {
       try {
         const response = await fetch("http://localhost:5000/api/allTurfs");
         const resData = await response.json();
-        
+
         if (resData.success) {
-        
-          const normalizedData = resData.data.map((item: any) => ({
-            ...item,
-            name: item.name || item.title, 
-            pricePerHour: item.pricePerHour || item.price, 
-            rating: item.rating || 4.5, 
-          }));
+          // ✅ ফিক্স: ব্যাকএন্ডের raw shape থেকে TurfCard-এর প্রত্যাশিত Turf shape এ পুরোপুরি ম্যাপ করা হলো
+          const normalizedData: Turf[] = resData.data.map(
+            (item: RawTurfDocument) => ({
+              _id: item._id,
+              name: item.title,
+              location: item.location,
+              pricePerHour: item.price,
+              sportType: item.sportType,
+              image: item.image,
+              rating: 4.5,
+              isAvailable: true,
+              description: item.description ?? "",
+              ownerId: item.ownerEmail,
+              createdAt: new Date().toISOString(),
+            }),
+          );
           setTurfs(normalizedData);
+        } else {
+          setHasError(true);
         }
       } catch (error) {
         console.error("Failed to fetch turfs:", error);
+        setHasError(true);
       } finally {
         setIsLoading(false);
       }
@@ -44,16 +68,12 @@ export default function ExploreTurfsPage() {
     fetchTurfs();
   }, []);
 
-  // ফিল্টারিং এবং সর্টিং লজিক (এখন mockTurfs এর জায়গায় রিয়েল 'turfs' স্টেট ব্যবহার হবে)
-  const filteredAndSortedTurfs = useMemo(() => {
+  const filteredAndSortedTurfs: Turf[] = useMemo(() => {
     return turfs
       .filter((turf) => {
-        const nameToSearch = turf.name || "";
-        const locationToSearch = turf.location || "";
-        
         const matchesSearch =
-          nameToSearch.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          locationToSearch.toLowerCase().includes(searchQuery.toLowerCase());
+          turf.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          turf.location.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesSport =
           selectedSport === "all" || turf.sportType === selectedSport;
         const matchesPrice = turf.pricePerHour <= maxPrice;
@@ -63,14 +83,12 @@ export default function ExploreTurfsPage() {
       .sort((a, b) => {
         if (sortBy === "rating") return b.rating - a.rating;
         if (sortBy === "priceLow") return a.pricePerHour - b.pricePerHour;
-        if (sortBy === "priceHigh") return b.pricePerHour - a.pricePerHour;
-        return 0;
+        return b.pricePerHour - a.pricePerHour;
       });
   }, [turfs, searchQuery, selectedSport, maxPrice, sortBy]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      {/* Page Header with Action Button */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">
@@ -88,10 +106,8 @@ export default function ExploreTurfsPage() {
         </Link>
       </div>
 
-      {/* Filter and Search Panel Box */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-10 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* 1. Search Input */}
           <div className="md:col-span-2 flex flex-col gap-1.5">
             <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">
               Search Venue
@@ -105,7 +121,6 @@ export default function ExploreTurfsPage() {
             />
           </div>
 
-          {/* 2. Sport Type Filter */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">
               Select Sport
@@ -124,7 +139,6 @@ export default function ExploreTurfsPage() {
             </select>
           </div>
 
-          {/* 3. Sorting Option */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">
               Sort By
@@ -143,7 +157,6 @@ export default function ExploreTurfsPage() {
           </div>
         </div>
 
-        {/* 4. Price Range Filter */}
         <div className="border-t border-slate-100 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="w-full sm:max-w-xs flex flex-col gap-1.5">
             <div className="flex justify-between text-xs font-bold text-slate-600 uppercase tracking-wider">
@@ -155,7 +168,7 @@ export default function ExploreTurfsPage() {
             <input
               type="range"
               min="400"
-              max="5000" // রেঞ্জ ১০০০ টাকার বেশি এরিনার জন্য ৫০০০ পর্যন্ত বাড়িয়ে দেওয়া হলো
+              max="5000"
               step="50"
               value={maxPrice}
               onChange={(e) => setMaxPrice(Number(e.target.value))}
@@ -163,7 +176,6 @@ export default function ExploreTurfsPage() {
             />
           </div>
 
-          {/* Active Filters Clear Count Banner */}
           <div className="text-xs font-semibold text-slate-400 self-end sm:self-center">
             Showing{" "}
             <span className="text-slate-700 font-bold">
@@ -174,21 +186,24 @@ export default function ExploreTurfsPage() {
         </div>
       </div>
 
-      {/* Loading State Handle */}
       {isLoading ? (
         <div className="text-center py-20">
           <span className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin inline-block"></span>
           <p className="text-slate-500 text-sm mt-2">Loading Arenas...</p>
         </div>
+      ) : hasError ? (
+        <div className="text-center py-20 border border-dashed border-red-200 rounded-2xl bg-white">
+          <p className="text-red-500 text-sm">
+            Failed to load arenas. Please check if the server is running.
+          </p>
+        </div>
       ) : filteredAndSortedTurfs.length > 0 ? (
-        /* Turf Listing Grid */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredAndSortedTurfs.map((turf) => (
             <TurfCard key={turf._id} turf={turf} />
           ))}
         </div>
       ) : (
-        /* Empty State */
         <div className="text-center py-20 border border-dashed border-slate-200 rounded-2xl bg-white">
           <span className="text-4xl">🔍</span>
           <h3 className="text-lg font-bold text-slate-800 mt-4">

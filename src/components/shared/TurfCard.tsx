@@ -7,12 +7,13 @@ interface TurfCardProps {
 }
 
 export default function TurfCard({ turf }: TurfCardProps) {
+  console.log(turf.image,"img");
   return (
     <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col group">
       {/* Card Image Area */}
       <div className="relative h-48 w-full overflow-hidden bg-slate-100">
         <Image
-          src={turf.image}
+           src={turf.image && turf.image.trim() !== "" ? turf.image : "/turfs/placeholder.jpg"}
           alt={turf.name}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"

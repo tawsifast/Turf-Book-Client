@@ -1,5 +1,3 @@
-// src/types/turf.ts
-
 export type SportType = "futsal" | "cricket" | "badminton";
 
 export interface Turf {
@@ -8,11 +6,10 @@ export interface Turf {
   location: string;
   pricePerHour: number;
   sportType: SportType;
-  image: string[];
+  image: string;
   rating: number;
   isAvailable: boolean;
   description: string;
-//   amenities: string[]; // যেমন: Floodlights, Changing Room, Parking (গর্জিয়াস ডিজাইনের জন্য)
   ownerId: string;
   createdAt: string;
 }

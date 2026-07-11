@@ -74,7 +74,7 @@ export default function ManageItemsPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/allTurfs/${id}?email=${currentUserEmail}`,
+        `http://localhost:5000/api/ownerTurfs/${id}?email=${currentUserEmail}`, // ✅ ফিক্স: allTurfs -> ownerTurfs
         { method: "DELETE" },
       );
       const data = await response.json();
@@ -93,11 +93,18 @@ export default function ManageItemsPage() {
     if (!currentUserEmail) return alert("You must be logged in!");
 
     try {
-      const response = await fetch(`http://localhost:5000/api/allTurfs/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...editFormData, userEmail: currentUserEmail }),
-      });
+      const response = await fetch(
+        `http://localhost:5000/api/ownerTurfs/${id}`,
+        {
+          // ✅ ফিক্স: allTurfs -> ownerTurfs
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...editFormData,
+            userEmail: currentUserEmail,
+          }),
+        },
+      );
       const data = await response.json();
 
       if (response.ok && data.success) {
