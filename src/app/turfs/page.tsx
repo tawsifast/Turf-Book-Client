@@ -30,43 +30,46 @@ export default function ExploreTurfsPage() {
     "rating",
   );
 
-  useEffect(() => {
-    const fetchTurfs = async (): Promise<void> => {
-      try {
-        const response = await fetch("http://localhost:5000/api/allTurfs");
-        const resData = await response.json();
+ useEffect(() => {
+  const fetchTurfs = async (): Promise<void> => {
+    try {
+      const response = await fetch("http://localhost:5000/api/allTurfs");
+      const resData = await response.json();
 
-        if (resData.success) {
-          // ✅ ফিক্স: ব্যাকএন্ডের raw shape থেকে TurfCard-এর প্রত্যাশিত Turf shape এ পুরোপুরি ম্যাপ করা হলো
-          const normalizedData: Turf[] = resData.data.map(
-            (item: RawTurfDocument) => ({
-              _id: item._id,
-              name: item.title,
-              location: item.location,
-              pricePerHour: item.price,
-              sportType: item.sportType,
-              image: item.image,
-              rating: 4.5,
-              isAvailable: true,
-              description: item.description ?? "",
-              ownerId: item.ownerEmail,
-              createdAt: new Date().toISOString(),
-            }),
-          );
-          setTurfs(normalizedData);
-        } else {
-          setHasError(true);
+      if (resData.success) {
+        const normalizedData: Turf[] = resData.data.map((item: RawTurfDocument) => ({
+          _id: item._id,
+          name: item.title,
+          location: item.location,
+          pricePerHour: item.price,
+          sportType: item.sportType,
+          image: item.image,
+          rating: 4.5,
+          isAvailable: true,
+          description: item.description ?? "",
+          ownerId: item.ownerEmail,
+          createdAt: new Date().toISOString(),
+        }));
+        setTurfs(normalizedData);
+
+        // ✅ ফিক্স: সবচেয়ে বেশি price অনুযায়ী maxPrice ডিফল্ট সেট করা, যাতে কোনো turf শুরুতেই বাদ না পড়ে
+        if (normalizedData.length > 0) {
+          const highestPrice = Math.max(...normalizedData.map((t) => t.pricePerHour));
+          setMaxPrice(highestPrice);
         }
-      } catch (error) {
-        console.error("Failed to fetch turfs:", error);
+      } else {
         setHasError(true);
-      } finally {
-        setIsLoading(false);
       }
-    };
+    } catch (error) {
+      console.error("Failed to fetch turfs:", error);
+      setHasError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    fetchTurfs();
-  }, []);
+  fetchTurfs();
+}, []);
 
   const filteredAndSortedTurfs: Turf[] = useMemo(() => {
     return turfs

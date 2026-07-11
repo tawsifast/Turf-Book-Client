@@ -7,7 +7,7 @@ interface TurfCardProps {
 }
 
 export default function TurfCard({ turf }: TurfCardProps) {
-  console.log(turf.image,"img");
+  // console.log(turf.image,"img");
   return (
     <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col group">
       {/* Card Image Area */}
