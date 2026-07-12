@@ -37,17 +37,17 @@ export default function Navbar() {
   const privateUserRoutes = [
     { name: "Home", path: "/" },
     { name: "Explore Turfs", path: "/turfs" },
-    { name: "Bookings", path: "/bookings" },
+    { name: "Bookings", path: "/turfs/owner/bookings" },
     { name: "Add Turf", path: "/turfs/add" },
-    { name: "Manage Turfs", path: "/turfs/manage" },
+    { name: "Manage Turfs", path: "/turfs/owner/manage" },
   ];
 
   const adminRoutes = [
     { name: "Home", path: "/" },
     { name: "Explore Turfs", path: "/turfs" },
-    { name: "Admin Dashboard", path: "/admin/dashboard" },
     { name: "Add Turf", path: "/turfs/add" },
-    { name: "Manage Turfs", path: "/turfs/manage" },
+    { name: "Manage Turfs", path: "/turfs/admin/manage" },
+    { name: "Dashboard", path: "/turfs/admin/dashboard" },
   ];
 
   let activeRoutes = publicRoutes;

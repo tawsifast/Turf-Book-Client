@@ -1,10 +1,8 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
 import Link from "next/link";
 import type { Turf, SportType } from "@/types/turf";
 import Image from "next/image";
+import BookNowButton from "@/components/user/BookNowButton";
+
 
 interface RawTurfDocument {
   _id: string;
@@ -18,57 +16,44 @@ interface RawTurfDocument {
   ownerEmail: string;
 }
 
-export default function TurfDetailPage() {
-  const { id } = useParams<{ id: string }>();
+// সার্ভার সাইড ডাটা ফেচিং ফাংশন
+async function getTurfDetails(id: string): Promise<Turf | null> {
+  try {
+    const response = await fetch(`http://localhost:5000/api/allTurfs/${id}`, {
+      cache: "no-store", // প্রতি রিকোয়েস্টে লেটেস্ট ডাটা পাওয়ার জন্য
+    });
+    const resData = await response.json();
 
-  const [turf, setTurf] = useState<Turf | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    if (!id) return;
-
-    const fetchTurfDetails = async (): Promise<void> => {
-      try {
-        const response = await fetch(`http://localhost:5000/api/allTurfs/${id}`);
-        const resData = await response.json();
-
-        if (resData.success) {
-          const item: RawTurfDocument = resData.data;
-          const normalized: Turf = {
-            _id: item._id,
-            name: item.title,
-            location: item.location,
-            pricePerHour: item.price,
-            sportType: item.sportType,
-            image: item.image,
-            rating: 4.7,
-            isAvailable: true,
-            description: item.description ?? "",
-            ownerId: item.ownerEmail,
-            createdAt: new Date().toISOString(),
-          };
-          setTurf(normalized);
-        } else {
-          console.error("Arena not found");
-        }
-      } catch (error) {
-        console.error("Error fetching turf details:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchTurfDetails();
-  }, [id]);
-
-  if (isLoading) {
-    return (
-      <div className="text-center py-20">
-        <span className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin inline-block"></span>
-        <p className="text-slate-500 text-sm mt-2">Loading details...</p>
-      </div>
-    );
+    if (resData.success) {
+      const item: RawTurfDocument = resData.data;
+      return {
+        _id: item._id,
+        name: item.title,
+        location: item.location,
+        pricePerHour: item.price,
+        sportType: item.sportType,
+        image: item.image,
+        rating: 4.7,
+        isAvailable: true,
+        description: item.description ?? "",
+        ownerId: item.ownerEmail,
+        createdAt: new Date().toISOString(),
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching turf details:", error);
+    return null;
   }
+}
+
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default async function TurfDetailPage({ params }: PageProps) {
+  const { id } = await params;
+  const turf = await getTurfDetails(id);
 
   if (!turf) {
     return (
@@ -81,7 +66,6 @@ export default function TurfDetailPage() {
     );
   }
 
-  // ✅ ফিক্স: empty string ("") হলেও fallback দরকার, শুধু undefined check যথেষ্ট না
   const imageSrc = turf.image && turf.image.trim() !== "" ? turf.image : "https://images.unsplash.com/photo-1517649763962-0c623066013b";
 
   return (
@@ -93,10 +77,13 @@ export default function TurfDetailPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-6">
           <div className="relative aspect-video rounded-3xl overflow-hidden border border-slate-200 shadow-sm">
-            <Image src={imageSrc} alt={turf.name}
-            width={500}
-            height={500}
-            className="w-full h-full object-cover" />
+            <Image 
+              src={imageSrc} 
+              alt={turf.name}
+              width={800}
+              height={500}
+              className="w-full h-full object-cover" 
+            />
           </div>
 
           <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-4">
@@ -121,30 +108,27 @@ export default function TurfDetailPage() {
         </div>
 
         <div className="space-y-6">
-          <div className="text-white rounded-3xl p-6 shadow-xl sticky top-6 bg-slate-900">
+          {/* ✅ আপনার রিকোয়েস্ট অনুযায়ী কালো ব্যাকগ্রাউন্ড পরিবর্তন করে পেজ ডিজাইনের সাথে ম্যাচিং হোয়াইট কার্ড করা হয়েছে */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm sticky top-6">
             <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Price Rate</p>
             <div className="flex items-baseline gap-1 mt-1">
-              <span className="text-3xl font-black text-emerald-400">৳{turf.pricePerHour}</span>
-              <span className="text-slate-400 text-xs">/ hour</span>
+              <span className="text-3xl font-black text-emerald-600">৳{turf.pricePerHour}</span>
+              <span className="text-slate-500 text-xs">/ hour</span>
             </div>
 
-            <div className="border-t border-white/10 my-4 pt-4 space-y-3 text-xs text-slate-300">
+            <div className="border-t border-slate-100 my-4 pt-4 space-y-3 text-xs text-slate-600">
               <div className="flex justify-between">
                 <span>Availability</span>
-                <span className="text-emerald-400 font-bold">{turf.isAvailable ? "Available Now" : "Booked"}</span>
+                <span className="text-emerald-600 font-bold">{turf.isAvailable ? "Available Now" : "Booked"}</span>
               </div>
               <div className="flex justify-between">
                 <span>Field Quality</span>
-                <span>Premium Turf (FIFA Approved)</span>
+                <span className="text-slate-800 font-medium">Premium Turf (FIFA Approved)</span>
               </div>
             </div>
 
-            <button
-              onClick={() => alert("Booking functionality coming soon!")}
-              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl transition duration-200 text-sm mt-2 shadow-lg shadow-emerald-900/20"
-            >
-              Book This Arena
-            </button>
+            {/* বুকিং লজিক হ্যান্ডেল করার জন্য ক্লায়েন্ট বাটন কম্পোনেন্ট */}
+            <BookNowButton turf={turf} />
           </div>
         </div>
       </div>
