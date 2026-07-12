@@ -3,19 +3,21 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Turf } from "@/types/turf";
+import { authClient } from "@/lib/auth-client";
 
 export default function BookNowButton({ turf }: { turf: Turf }) {
   const [isBooking, setIsBooking] = useState(false);
   const router = useRouter();
 
-  // ⚠️ এখানে আপনার Auth সিস্টেম থেকে ইউজার ডাটা নিয়ে আসবেন। উদাহরণস্বরূপ নিচে একটি ডামি ইউজার দেওয়া হলো:
-  const currentUser = {
-    name: "John Doe",
-    email: "john@example.com", 
-  };
+  const { data: session, isPending: isAuthPending } = authClient.useSession();
 
-  const handleBooking = async () => {
-    if (!currentUser.email) {
+  const handleBooking = async (): Promise<void> => {
+    const userEmail =
+      typeof session?.user === "string" ? session.user : session?.user?.email;
+    const userName =
+      typeof session?.user === "string" ? session.user : session?.user?.name;
+
+    if (!userEmail) {
       alert("Please log in to book this arena!");
       return;
     }
@@ -39,8 +41,8 @@ export default function BookNowButton({ turf }: { turf: Turf }) {
           pricePerHour: turf.pricePerHour,
           image: turf.image,
           sportType: turf.sportType,
-          userEmail: currentUser.email, // এই ইমেইল দিয়ে পরে ফিল্টার করা হবে
-          userName: currentUser.name,
+          userEmail,
+          userName,
           bookedAt: new Date().toISOString(),
         }),
       });
@@ -50,7 +52,7 @@ export default function BookNowButton({ turf }: { turf: Turf }) {
       if (data.success) {
         alert("Booking successful!");
         // আপনার রিকোয়েস্ট অনুযায়ী ইউজারকে তার বুকিং পেজে রিডাইরেক্ট করা হচ্ছে
-        router.push("/turf/bookings");
+        router.push("/turfs/owner/dashboard");
       } else {
         alert(data.message || "Booking failed. Try again.");
       }

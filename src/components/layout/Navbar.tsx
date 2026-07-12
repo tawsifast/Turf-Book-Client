@@ -1,59 +1,66 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Menu, X, LogOut } from "lucide-react";
+import { Menu, X, LogOut, ChevronDown, LayoutDashboard } from "lucide-react";
 import { Avatar } from "@heroui/react";
 import { authClient } from "@/lib/auth-client";
+
+interface NavLink {
+  name: string;
+  path: string;
+}
+
+// ✅ এই ৪টা লিংক সবসময় দেখাবে, লগইন অবস্থা যাই হোক না কেন
+const coreLinks: NavLink[] = [
+  { name: "Home", path: "/" },
+  { name: "Explore Turfs", path: "/turfs" },
+  { name: "About Us", path: "/about" },
+  { name: "Contact", path: "/contact" },
+];
 
 export default function Navbar() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [isMounted, setIsMounted] = useState<boolean>(false); // ✅ hydration guard
+  const [isMounted, setIsMounted] = useState<boolean>(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const { data: session, isPending } = authClient.useSession();
   const user = session?.user as
     | { role?: string; name: string; image?: string | null | undefined }
     | undefined;
 
-  // ✅ ফিক্স: console.log(user?.role, "role") সরিয়ে দেওয়া হলো — এটা debug leftover ছিল
-
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // ✅ ফিক্স: mount না হওয়া পর্যন্ত সবসময় "logged out" ধরে নেওয়া হচ্ছে,
-  // যাতে server আর client-এর প্রথম render একই থাকে (hydration mismatch এড়াতে)
+  // ✅ dropdown-এর বাইরে ক্লিক করলে বন্ধ হয়ে যাবে
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent): void {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const isLoggedIn = isMounted && !isPending && !!session;
   const showLoading = isMounted && isPending;
+  const isAdmin = user?.role === "admin";
 
-  const publicRoutes = [
-    { name: "Home", path: "/" },
-    { name: "Explore Turfs", path: "/turfs" },
-    { name: "About Us", path: "/about" },
-  ];
-
-  const privateUserRoutes = [
-    { name: "Home", path: "/" },
-    { name: "Explore Turfs", path: "/turfs" },
-    { name: "Bookings", path: "/turfs/owner/bookings" },
-    { name: "Add Turf", path: "/turfs/add" },
-    { name: "Manage Turfs", path: "/turfs/owner/manage" },
-  ];
-
-  const adminRoutes = [
-    { name: "Home", path: "/" },
-    { name: "Explore Turfs", path: "/turfs" },
-    { name: "Add Turf", path: "/turfs/add" },
-    { name: "Manage Turfs", path: "/turfs/admin/manage" },
-    { name: "Dashboard", path: "/turfs/admin/dashboard" },
-  ];
-
-  let activeRoutes = publicRoutes;
-  if (isLoggedIn && user) {
-    activeRoutes = user.role === "admin" ? adminRoutes : privateUserRoutes;
-  }
+  // ✅ role-ভিত্তিক dashboard links, coreLinks এর সাথে মেশানো হচ্ছে না — আলাদা dropdown এ থাকবে
+  const dashboardLinks: NavLink[] = isAdmin
+    ? [
+        { name: "Add Turf", path: "/turfs/add" },
+        { name: "Admin Dashboard", path: "/turfs/admin/dashboard" },
+      ]
+    : [
+        { name: "Add Turf", path: "/turfs/add" },
+        { name: "My Dashboard", path: "/turfs/owner/dashboard" },
+      ];
 
   const handleLogout = async () => {
     await authClient.signOut({
@@ -75,12 +82,42 @@ export default function Navbar() {
             Turf<span className="text-emerald-600">Pulse</span>
           </Link>
 
+          {/* Desktop: core links সবসময় দেখাবে */}
           <div className="hidden md:flex items-center gap-6">
-            {activeRoutes.map((route) => (
+            {coreLinks.map((route) => (
               <Link key={route.path} href={route.path} className="text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors">
                 {route.name}
               </Link>
             ))}
+
+            {/* ✅ লগইন থাকলে "Dashboard" নামে একটা dropdown, ক্লাটার কমাতে সব role-link এখানে জমা */}
+            {isLoggedIn && (
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setIsDropdownOpen((prev) => !prev)}
+                  className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors"
+                >
+                  <LayoutDashboard size={15} />
+                  Dashboard
+                  <ChevronDown size={14} className={`transition-transform ${isDropdownOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                {isDropdownOpen && (
+                  <div className="absolute top-full mt-2 right-0 bg-white border border-slate-200 rounded-xl shadow-lg py-2 min-w-[180px]">
+                    {dashboardLinks.map((link) => (
+                      <Link
+                        key={link.path}
+                        href={link.path}
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-emerald-600"
+                      >
+                        {link.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="hidden md:flex items-center gap-4">
@@ -92,7 +129,7 @@ export default function Navbar() {
                   <div className="text-right">
                     <span
                       className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider ${
-                        user.role === "admin" ? "bg-rose-100 text-rose-600" : "bg-emerald-100 text-emerald-600"
+                        isAdmin ? "bg-rose-100 text-rose-600" : "bg-emerald-100 text-emerald-600"
                       }`}
                     >
                       {user.role}
@@ -136,8 +173,9 @@ export default function Navbar() {
         </div>
       </div>
 
+      {/* Mobile menu — core links + (লগইন থাকলে) dashboard links একসাথে, section আলাদা করা */}
       {isOpen && (
-        <div className="md:hidden bg-white border-b border-slate-200 px-4 pt-2 pb-4 space-y-2">
+        <div className="md:hidden bg-white border-b border-slate-200 px-4 pt-2 pb-4 space-y-1">
           {isLoggedIn && user && (
             <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl my-2 border border-slate-100">
               <Avatar>
@@ -153,11 +191,24 @@ export default function Navbar() {
             </div>
           )}
 
-          {activeRoutes.map((route) => (
+          {coreLinks.map((route) => (
             <Link key={route.path} href={route.path} onClick={() => setIsOpen(false)} className="block text-base font-medium text-slate-600 hover:text-emerald-600 py-2">
               {route.name}
             </Link>
           ))}
+
+          {isLoggedIn && (
+            <>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider pt-3 pb-1 border-t border-slate-100 mt-2">
+                Dashboard
+              </p>
+              {dashboardLinks.map((link) => (
+                <Link key={link.path} href={link.path} onClick={() => setIsOpen(false)} className="block text-base font-medium text-slate-600 hover:text-emerald-600 py-2">
+                  {link.name}
+                </Link>
+              ))}
+            </>
+          )}
 
           <div className="pt-4 border-t border-slate-100 flex flex-col gap-2">
             {!showLoading && isLoggedIn ? (
