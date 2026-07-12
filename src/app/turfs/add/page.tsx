@@ -42,6 +42,7 @@ export default function AddTurfPage() {
           price: Number(formData.pricePerHour), // ডাটাবেজে নাম্বার হিসেবে রাখার জন্য
           image: formData.image,
           description: formData.description,
+          status: "pending", // ⚡ নতুন টর্ফের স্ট্যাটাস ডিফল্টভাবে pending থাকবে
           ownerName: owner?.name,
           ownerEmail: owner?.email,
         }),

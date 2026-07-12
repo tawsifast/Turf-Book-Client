@@ -5,7 +5,7 @@ import TurfCard from "@/components/shared/TurfCard";
 import type { SportType, Turf } from "@/types/turf";
 import Link from "next/link";
 
-// ব্যাকএন্ড থেকে ঠিক যে shape এ ডাটা আসে
+// 1. এখানে status: string যোগ করা হয়েছে
 interface RawTurfDocument {
   _id: string;
   title: string;
@@ -16,64 +16,72 @@ interface RawTurfDocument {
   description: string;
   ownerName: string;
   ownerEmail: string;
+  status?: string; // ⚡ ব্যাকএন্ড থেকে আসা স্ট্যাটাস ট্র্যাকিংয়ের জন্য
+}
+
+// যদি আপনার টাইপ ফাইলের (@/types/turf) Turf ইন্টারফেসে status না থাকে, 
+// তবে এই ফাইলের কাজের সুবিধার্থে আমরা এক্সটেন্ডেড ইন্টারফেস বা লোকাল টাইপ ভেবে নিচ্ছি।
+interface ExtendedTurf extends Turf {
+  status?: string;
 }
 
 export default function ExploreTurfsPage() {
-  const [turfs, setTurfs] = useState<Turf[]>([]);
+  const [turfs, setTurfs] = useState<ExtendedTurf[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [hasError, setHasError] = useState<boolean>(false);
 
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedSport, setSelectedSport] = useState<SportType | "all">("all");
   const [maxPrice, setMaxPrice] = useState<number>(1500);
-  const [sortBy, setSortBy] = useState<"rating" | "priceLow" | "priceHigh">(
-    "rating",
-  );
+  const [sortBy, setSortBy] = useState<"rating" | "priceLow" | "priceHigh">("rating");
 
- useEffect(() => {
-  const fetchTurfs = async (): Promise<void> => {
-    try {
-      const response = await fetch("http://localhost:5000/api/allTurfs");
-      const resData = await response.json();
+  useEffect(() => {
+    const fetchTurfs = async (): Promise<void> => {
+      try {
+        const response = await fetch("http://localhost:5000/api/allTurfs");
+        const resData = await response.json();
 
-      if (resData.success) {
-        const normalizedData: Turf[] = resData.data.map((item: RawTurfDocument) => ({
-          _id: item._id,
-          name: item.title,
-          location: item.location,
-          pricePerHour: item.price,
-          sportType: item.sportType,
-          image: item.image,
-          rating: 4.5,
-          isAvailable: true,
-          description: item.description ?? "",
-          ownerId: item.ownerEmail,
-          createdAt: new Date().toISOString(),
-        }));
-        setTurfs(normalizedData);
+        if (resData.success) {
+          const normalizedData: ExtendedTurf[] = resData.data.map((item: RawTurfDocument) => ({
+            _id: item._id,
+            name: item.title,
+            location: item.location,
+            pricePerHour: item.price,
+            sportType: item.sportType,
+            image: item.image,
+            rating: 4.5,
+            isAvailable: true,
+            description: item.description ?? "",
+            ownerId: item.ownerEmail,
+            createdAt: new Date().toISOString(),
+            status: item.status || "pending", // ⚡ ব্যাকএন্ডের স্ট্যাটাস রিসিভ করা হচ্ছে (ডিফল্ট pending)
+          }));
+          setTurfs(normalizedData);
 
-        // ✅ ফিক্স: সবচেয়ে বেশি price অনুযায়ী maxPrice ডিফল্ট সেট করা, যাতে কোনো turf শুরুতেই বাদ না পড়ে
-        if (normalizedData.length > 0) {
-          const highestPrice = Math.max(...normalizedData.map((t) => t.pricePerHour));
-          setMaxPrice(highestPrice);
+          if (normalizedData.length > 0) {
+            const highestPrice = Math.max(...normalizedData.map((t) => t.pricePerHour));
+            setMaxPrice(highestPrice);
+          }
+        } else {
+          setHasError(true);
         }
-      } else {
+      } catch (error) {
+        console.error("Failed to fetch turfs:", error);
         setHasError(true);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Failed to fetch turfs:", error);
-      setHasError(true);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
-  fetchTurfs();
-}, []);
+    fetchTurfs();
+  }, []);
 
-  const filteredAndSortedTurfs: Turf[] = useMemo(() => {
+  const filteredAndSortedTurfs: ExtendedTurf[] = useMemo(() => {
     return turfs
       .filter((turf) => {
+        // ⚡ শুধুমাত্র APPROVED স্ট্যাটাসওয়ালা টর্ফগুলো ফিল্টার করবে
+        const isApproved = turf.status === "approved";
+
         const matchesSearch =
           turf.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           turf.location.toLowerCase().includes(searchQuery.toLowerCase());
@@ -81,7 +89,8 @@ export default function ExploreTurfsPage() {
           selectedSport === "all" || turf.sportType === selectedSport;
         const matchesPrice = turf.pricePerHour <= maxPrice;
 
-        return matchesSearch && matchesSport && matchesPrice;
+        // ফিল্টারে 'isApproved' যুক্ত করা হলো
+        return isApproved && matchesSearch && matchesSport && matchesPrice;
       })
       .sort((a, b) => {
         if (sortBy === "rating") return b.rating - a.rating;
