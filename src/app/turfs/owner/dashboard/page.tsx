@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { authClient } from "@/lib/auth-client";
+import { auth } from "@/lib/auth";
 
 interface OwnerTurf {
   _id: string;
@@ -54,6 +55,7 @@ export default function OwnerDashboardPage() {
     pricePerHour: "",
   });
 
+
   useEffect(() => {
     if (isAuthPending || !currentUserEmail) {
       if (!isAuthPending) setIsDataLoading(false);
@@ -61,6 +63,9 @@ export default function OwnerDashboardPage() {
     }
 
     const fetchData = async (): Promise<void> => {
+      // const {accessToken} = await auth.api.getAccessToken();
+      // console.log(accessToken, "token");
+      
       setIsDataLoading(true);
       try {
         // ✅ দুটো fetch একসাথে চালানো হচ্ছে Promise.all দিয়ে, একটার জন্য অন্যটা wait করতে হচ্ছে না
@@ -112,12 +117,16 @@ export default function OwnerDashboardPage() {
   }
 
   async function handleUpdate(id: string): Promise<void> {
+    const {data:token} = await authClient.token();
+    console.log(token?.token, "token"); 
     if (!currentUserEmail) return;
-
     try {
       const response = await fetch(`http://localhost:5000/api/ownerTurfs/${id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+           "Content-Type": "application/json",
+            authorization: `Bearer ${token?.token}`
+          },
         body: JSON.stringify({
           name: editFormData.name,
           location: editFormData.location,

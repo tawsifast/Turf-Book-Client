@@ -12,6 +12,7 @@ export default function AddTurfPage() {
 
   const { data: session, isPending: isAuthPending } = authClient.useSession();
     const owner = session?.user;
+    
 
   // ফর্মের স্টেট ম্যানেজমেন্ট
   const [formData, setFormData] = useState({
@@ -25,6 +26,9 @@ export default function AddTurfPage() {
   console.log(formData, "formdata");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    const {data:token} = await authClient.token();
+    console.log(token, "token"); 
+
     e.preventDefault();
     setIsSubmitting(true);
 
@@ -34,6 +38,7 @@ export default function AddTurfPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          authorization : `Bearer ${token?.token}`
         },
         body: JSON.stringify({
           title: formData.name, // ব্যাকএন্ডে আমরা 'title' ভ্যালিডেট করেছিলাম

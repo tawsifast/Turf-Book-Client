@@ -6,11 +6,11 @@ import Features from "@/components/home/Features";
 import Testimonials from "@/components/home/Testimonials";
 import Newsletter from "@/components/home/Newsletter";
 import TurfCard from "@/components/shared/TurfCard";
-import { mockTurfs } from "@/lib/mockData";
+
 
 export default function HomePage() {
   // ৪ নম্বর রিকোয়ারমেন্ট অনুযায়ী হোম পেজে ৩-৪ টি টপ কার্ড দেখানো
-  const featuredTurfs = mockTurfs.slice(0, 3);
+  // const featuredTurfs = mockTurfs.slice(0, 3);
 
   return (
     <>
@@ -28,11 +28,11 @@ export default function HomePage() {
           </div>
           
           {/* Responsive grid mapping for your Gorgeous TurfCard */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {featuredTurfs.map((turf) => (
               <TurfCard key={turf._id} turf={turf} />
             ))}
-          </div>
+          </div> */}
         </div>
       </section>
 

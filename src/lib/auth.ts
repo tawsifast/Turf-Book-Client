@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
-import { admin } from "better-auth/plugins"; // ⚡ ১. Admin প্লাগিন ইম্পোর্ট করুন
+import { admin, jwt } from "better-auth/plugins";
 
 const client = new MongoClient(process.env.MONGODB_URI as string);
 const db = client.db("turf");
@@ -13,12 +13,19 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
-  
-  // ⚡ ২. Admin প্লাগিনটি রেজিস্টার করুন
   plugins: [
-    admin() 
+    admin(),
+    jwt()
   ],
-  
+
+  session: {
+    cookieCache :{
+      enabled: true,
+      strategy: "jwt",
+      maxAge: 60 * 24 * 30
+    }
+  },
+
   databaseHooks: {
     user: {
       create: {
@@ -26,7 +33,7 @@ export const auth = betterAuth({
           return {
             data: {
               ...user,
-              role: "user", // ডিফল্ট রোল "user" সেট হবে
+              role: "user",
             },
           };
         },

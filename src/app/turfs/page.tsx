@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import TurfCard from "@/components/shared/TurfCard";
 import type { SportType, Turf } from "@/types/turf";
 import Link from "next/link";
 
-// 1. এখানে status: string যোগ করা হয়েছে
 interface RawTurfDocument {
   _id: string;
   title: string;
@@ -16,11 +15,9 @@ interface RawTurfDocument {
   description: string;
   ownerName: string;
   ownerEmail: string;
-  status?: string; // ⚡ ব্যাকএন্ড থেকে আসা স্ট্যাটাস ট্র্যাকিংয়ের জন্য
+  status?: string;
 }
 
-// যদি আপনার টাইপ ফাইলের (@/types/turf) Turf ইন্টারফেসে status না থাকে, 
-// তবে এই ফাইলের কাজের সুবিধার্থে আমরা এক্সটেন্ডেড ইন্টারফেস বা লোকাল টাইপ ভেবে নিচ্ছি।
 interface ExtendedTurf extends Turf {
   status?: string;
 }
@@ -32,80 +29,67 @@ export default function ExploreTurfsPage() {
 
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedSport, setSelectedSport] = useState<SportType | "all">("all");
-  const [maxPrice, setMaxPrice] = useState<number>(1500);
+  const [maxPrice, setMaxPrice] = useState<number>(5000);
   const [sortBy, setSortBy] = useState<"rating" | "priceLow" | "priceHigh">("rating");
+  
 
-  useEffect(() => {
-    const fetchTurfs = async (): Promise<void> => {
-      try {
-        const response = await fetch("http://localhost:5000/api/allTurfs");
-        const resData = await response.json();
 
-        if (resData.success) {
-          const normalizedData: ExtendedTurf[] = resData.data.map((item: RawTurfDocument) => ({
-            _id: item._id,
-            name: item.title,
-            location: item.location,
-            pricePerHour: item.price,
-            sportType: item.sportType,
-            image: item.image,
-            rating: 4.5,
-            isAvailable: true,
-            description: item.description ?? "",
-            ownerId: item.ownerEmail,
-            createdAt: new Date().toISOString(),
-            status: item.status || "pending", // ⚡ ব্যাকএন্ডের স্ট্যাটাস রিসিভ করা হচ্ছে (ডিফল্ট pending)
-          }));
-          setTurfs(normalizedData);
+  const fetchTurfs = useCallback(async (): Promise<void> => {
+    setIsLoading(true);
+    try {
+    
+      const params = new URLSearchParams();
+      if (searchQuery.trim() !== "") params.set("search", searchQuery);
+      if (selectedSport !== "all") params.set("sportType", selectedSport);
+      params.set("maxPrice", String(maxPrice));
+      params.set("sortBy", sortBy);
 
-          if (normalizedData.length > 0) {
-            const highestPrice = Math.max(...normalizedData.map((t) => t.pricePerHour));
-            setMaxPrice(highestPrice);
-          }
-        } else {
-          setHasError(true);
-        }
-      } catch (error) {
-        console.error("Failed to fetch turfs:", error);
+      const response = await fetch(`http://localhost:5000/api/allTurfs?${params.toString()}`);
+      const resData = await response.json();
+
+      if (resData.success) {
+        const normalizedData: ExtendedTurf[] = resData.data.map((item: RawTurfDocument) => ({
+          _id: item._id,
+          name: item.title,
+          location: item.location,
+          pricePerHour: item.price,
+          sportType: item.sportType,
+          image: item.image,
+          rating: 4.5,
+          isAvailable: true,
+          description: item.description ?? "",
+          ownerId: item.ownerEmail,
+          createdAt: new Date().toISOString(),
+          status: item.status || "pending",
+        }));
+        // ⚡ status filter client-side এই রাখা হলো, যেহেতু আগে বলা হয়েছিল এটা frontend-এই থাকবে
+        setTurfs(normalizedData.filter((t) => t.status === "approved"));
+        setHasError(false);
+      } else {
         setHasError(true);
-      } finally {
-        setIsLoading(false);
       }
-    };
+    } catch (error) {
+      console.error("Failed to fetch turfs:", error);
+      setHasError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [searchQuery, selectedSport, maxPrice, sortBy]);
 
-    fetchTurfs();
-  }, []);
+  // ✅ debounce — প্রতি keystroke এ না, বরং টাইপ করা থামার ৪০০ms পরে fetch হবে
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchTurfs();
+    }, 400);
 
-  const filteredAndSortedTurfs: ExtendedTurf[] = useMemo(() => {
-    return turfs
-      .filter((turf) => {
-        // ⚡ শুধুমাত্র APPROVED স্ট্যাটাসওয়ালা টর্ফগুলো ফিল্টার করবে
-        const isApproved = turf.status === "approved";
-
-        const matchesSearch =
-          turf.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          turf.location.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesSport =
-          selectedSport === "all" || turf.sportType === selectedSport;
-        const matchesPrice = turf.pricePerHour <= maxPrice;
-
-        // ফিল্টারে 'isApproved' যুক্ত করা হলো
-        return isApproved && matchesSearch && matchesSport && matchesPrice;
-      })
-      .sort((a, b) => {
-        if (sortBy === "rating") return b.rating - a.rating;
-        if (sortBy === "priceLow") return a.pricePerHour - b.pricePerHour;
-        return b.pricePerHour - a.pricePerHour;
-      });
-  }, [turfs, searchQuery, selectedSport, maxPrice, sortBy]);
+    return () => clearTimeout(timer); // আগের timer বাতিল, নতুন keystroke এ
+  }, [fetchTurfs]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-            Explore Sports Arenas
-          </h1>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Explore Sports Arenas</h1>
           <p className="text-slate-500 text-sm mt-1">
             Find and book the finest turfs matching your budget and schedule.
           </p>
@@ -121,9 +105,7 @@ export default function ExploreTurfsPage() {
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-10 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2 flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">
-              Search Venue
-            </label>
+            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Search Venue</label>
             <input
               type="text"
               placeholder="Search by name or location (e.g. GEC, Agrabad)..."
@@ -134,14 +116,10 @@ export default function ExploreTurfsPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">
-              Select Sport
-            </label>
+            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Select Sport</label>
             <select
               value={selectedSport}
-              onChange={(e) =>
-                setSelectedSport(e.target.value as SportType | "all")
-              }
+              onChange={(e) => setSelectedSport(e.target.value as SportType | "all")}
               className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition capitalize"
             >
               <option value="all">All Sports</option>
@@ -152,14 +130,10 @@ export default function ExploreTurfsPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">
-              Sort By
-            </label>
+            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Sort By</label>
             <select
               value={sortBy}
-              onChange={(e) =>
-                setSortBy(e.target.value as "rating" | "priceLow" | "priceHigh")
-              }
+              onChange={(e) => setSortBy(e.target.value as "rating" | "priceLow" | "priceHigh")}
               className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
             >
               <option value="rating">Top Rated (Default)</option>
@@ -173,9 +147,7 @@ export default function ExploreTurfsPage() {
           <div className="w-full sm:max-w-xs flex flex-col gap-1.5">
             <div className="flex justify-between text-xs font-bold text-slate-600 uppercase tracking-wider">
               <span>Max Price Per Hour</span>
-              <span className="text-emerald-600 font-extrabold">
-                ৳{maxPrice}
-              </span>
+              <span className="text-emerald-600 font-extrabold">৳{maxPrice}</span>
             </div>
             <input
               type="range"
@@ -189,11 +161,7 @@ export default function ExploreTurfsPage() {
           </div>
 
           <div className="text-xs font-semibold text-slate-400 self-end sm:self-center">
-            Showing{" "}
-            <span className="text-slate-700 font-bold">
-              {filteredAndSortedTurfs.length}
-            </span>{" "}
-            results
+            Showing <span className="text-slate-700 font-bold">{turfs.length}</span> results
           </div>
         </div>
       </div>
@@ -205,25 +173,20 @@ export default function ExploreTurfsPage() {
         </div>
       ) : hasError ? (
         <div className="text-center py-20 border border-dashed border-red-200 rounded-2xl bg-white">
-          <p className="text-red-500 text-sm">
-            Failed to load arenas. Please check if the server is running.
-          </p>
+          <p className="text-red-500 text-sm">Failed to load arenas. Please check if the server is running.</p>
         </div>
-      ) : filteredAndSortedTurfs.length > 0 ? (
+      ) : turfs.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredAndSortedTurfs.map((turf) => (
+          {turfs.map((turf) => (
             <TurfCard key={turf._id} turf={turf} />
           ))}
         </div>
       ) : (
         <div className="text-center py-20 border border-dashed border-slate-200 rounded-2xl bg-white">
           <span className="text-4xl">🔍</span>
-          <h3 className="text-lg font-bold text-slate-800 mt-4">
-            No Arenas Found
-          </h3>
+          <h3 className="text-lg font-bold text-slate-800 mt-4">No Arenas Found</h3>
           <p className="text-slate-400 text-sm mt-1 max-w-xs mx-auto">
-            Try adjusting your filters or search keywords to find alternative
-            available fields.
+            Try adjusting your filters or search keywords to find alternative available fields.
           </p>
         </div>
       )}
