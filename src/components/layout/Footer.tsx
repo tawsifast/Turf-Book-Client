@@ -20,15 +20,15 @@ export default function Footer() {
           <h4 className="text-white font-semibold mb-3">Contact</h4>
           <ul className="space-y-2 text-sm">
             <li>Agrabad, Chattogram, Bangladesh</li>
-            <li>support@turfbook.com</li>
-            <li>+880 1XXX-XXXXXX</li>
+            <li>0070tawsif@gmail.com</li>
+            <li>+880 1403794140</li>
           </ul>
         </div>
         <div>
           <h4 className="text-white font-semibold mb-3">Follow Us</h4>
           <div className="flex gap-4 text-sm">
-            <a href="#" className="hover:text-emerald-400">Facebook</a>
-            <a href="#" className="hover:text-emerald-400">Instagram</a>
+            <a href="https://www.facebook.com/mdtawsifulislam.islam" className="hover:text-emerald-400">Facebook</a>
+            <a href="https://www.instagram.com/_t_a_w_s_i_f__" className="hover:text-emerald-400">Instagram</a>
           </div>
         </div>
       </div>
