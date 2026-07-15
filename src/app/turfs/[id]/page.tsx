@@ -19,7 +19,7 @@ interface RawTurfDocument {
 // সার্ভার সাইড ডাটা ফেচিং ফাংশন
 async function getTurfDetails(id: string): Promise<Turf | null> {
   try {
-    const response = await fetch(`http://localhost:5000/api/allTurfs/${id}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/allTurfs/${id}`, {
       cache: "no-store", // প্রতি রিকোয়েস্টে লেটেস্ট ডাটা পাওয়ার জন্য
     });
     const resData = await response.json();

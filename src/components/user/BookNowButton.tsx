@@ -29,7 +29,7 @@ export default function BookNowButton({ turf }: { turf: Turf }) {
 
     try {
       // ব্যাকএন্ড API-তে বুকিং ডাটা পাঠানো হচ্ছে
-      const response = await fetch("http://localhost:5000/api/bookings", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/bookings`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

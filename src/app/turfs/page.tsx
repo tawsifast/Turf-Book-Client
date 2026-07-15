@@ -44,7 +44,7 @@ export default function ExploreTurfsPage() {
       params.set("maxPrice", String(maxPrice));
       params.set("sortBy", sortBy);
 
-      const response = await fetch(`http://localhost:5000/api/allTurfs?${params.toString()}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/allTurfs?${params.toString()}`);
       const resData = await response.json();
 
       if (resData.success) {

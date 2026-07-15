@@ -33,7 +33,9 @@ export default function Navbar() {
     | undefined;
 
   useEffect(() => {
-    setIsMounted(true);
+    // avoid synchronous setState inside effect to prevent cascading renders
+    const raf = requestAnimationFrame(() => setIsMounted(true));
+    return () => cancelAnimationFrame(raf);
   }, []);
 
   // ✅ dropdown-এর বাইরে ক্লিক করলে বন্ধ হয়ে যাবে

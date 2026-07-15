@@ -40,8 +40,8 @@ export default function AdminDashboardClient({ userEmail }: AdminDashboardClient
       setIsDataLoading(true);
       try {
         const [turfsRes, usersRes] = await Promise.all([
-          fetch(`http://localhost:5000/api/admin/turfs?email=${userEmail}`),
-          fetch(`http://localhost:5000/api/admin/users?email=${userEmail}`),
+          fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/admin/turfs?email=${userEmail}`),
+          fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/admin/users?email=${userEmail}`),
         ]);
         const turfsData = await turfsRes.json();
         const usersData = await usersRes.json();
@@ -60,7 +60,7 @@ export default function AdminDashboardClient({ userEmail }: AdminDashboardClient
 
   async function handleStatusChange(id: string, status: "approved" | "rejected"): Promise<void> {
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/turfs/${id}/status`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/admin/turfs/${id}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: userEmail, status }),
@@ -78,7 +78,7 @@ export default function AdminDashboardClient({ userEmail }: AdminDashboardClient
 
   async function handleRoleChange(id: string, role: "user" | "admin"): Promise<void> {
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/users/${id}/role`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/admin/users/${id}/role`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: userEmail, role }),

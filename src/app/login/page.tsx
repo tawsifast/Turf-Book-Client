@@ -125,7 +125,7 @@ export default function LoginPage() {
         <p className="text-center text-sm text-slate-500 pt-2">
           Don`t have an account?{" "}
           <Link href="/register" className="font-bold text-emerald-600 hover:underline inline-flex items-center gap-0.5">
-            Create an account <ArrowRight size={14} />
+            Create an account <ArrowRight width={14} height={14} />
           </Link>
         </p>
 

@@ -17,7 +17,7 @@ export default function NotFound() {
             Page Not Found
           </h1>
           <p className="text-slate-500 text-sm leading-relaxed">
-            The arena or page you are looking for doesn't exist, has been removed, or the link is broken.
+            The arena or page you are looking for doesn`t exist, has been removed, or the link is broken.
           </p>
         </div>
 

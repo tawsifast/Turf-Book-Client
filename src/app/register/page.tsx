@@ -162,14 +162,14 @@ export default function RegisterPage() {
           {/* Submit Button */}
           <Button
             type="submit"
-            disabled={isLoading}
+            isDisabled={isLoading}
             className="w-full bg-slate-900 hover:bg-emerald-600 disabled:bg-slate-900/50 text-white font-bold h-12 rounded-xl shadow-sm transition-colors duration-200 text-sm flex items-center justify-center gap-2 mt-2"
           >
             {isLoading ? (
               <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
             ) : (
               <>
-                <PersonPlus size={16} />
+                <PersonPlus width={14} height={14} />
                 Sign Up
               </>
             )}
@@ -183,7 +183,7 @@ export default function RegisterPage() {
             href="/login"
             className="font-bold text-emerald-600 hover:underline inline-flex items-center gap-0.5"
           >
-            <ArrowLeft size={14} /> Sign in instead
+            <ArrowLeft width={14} height={14} /> Sign in instead
           </Link>
         </p>
       </div>

@@ -34,7 +34,7 @@ export default function AddTurfPage() {
 
     try {
       // ব্যাকএন্ড এপিআই-তে পোস্ট রিকোয়েস্ট পাঠানো হচ্ছে
-      const response = await fetch("http://localhost:5000/api/allTurfs", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/allTurfs`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
