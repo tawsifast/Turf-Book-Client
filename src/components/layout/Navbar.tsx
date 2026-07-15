@@ -55,11 +55,11 @@ export default function Navbar() {
   const dashboardLinks: NavLink[] = isAdmin
     ? [
         { name: "Add Turf", path: "/turfs/add" },
-        { name: "Admin Dashboard", path: "/turfs/admin/dashboard" },
+        { name: "Admin Dashboard", path: "/turfs/admin" },
       ]
     : [
         { name: "Add Turf", path: "/turfs/add" },
-        { name: "My Dashboard", path: "/turfs/owner/dashboard" },
+        { name: "My Dashboard", path: "/turfs/owner" },
       ];
 
   const handleLogout = async () => {

@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { authClient } from "@/lib/auth-client";
-import { auth } from "@/lib/auth";
 
 interface OwnerTurf {
   _id: string;
@@ -38,10 +37,13 @@ interface EditFormData {
 
 type Tab = "turfs" | "bookings";
 
-export default function OwnerDashboardPage() {
-  const { data: session, isPending: isAuthPending } = authClient.useSession();
-  const currentUserEmail = session?.user?.email;
+interface OwnerDashboardClientProps {
+  userEmail: string;
+  userName: string;
+}
 
+// ✅ email/name এখন server থেকে verified prop হিসেবে আসছে — এখানে আর session check/redirect করার দরকার নেই
+export default function OwnerDashboardClient({ userEmail, userName }: OwnerDashboardClientProps) {
   const [activeTab, setActiveTab] = useState<Tab>("turfs");
   const [turfs, setTurfs] = useState<OwnerTurf[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -55,23 +57,13 @@ export default function OwnerDashboardPage() {
     pricePerHour: "",
   });
 
-
   useEffect(() => {
-    if (isAuthPending || !currentUserEmail) {
-      if (!isAuthPending) setIsDataLoading(false);
-      return;
-    }
-
     const fetchData = async (): Promise<void> => {
-      // const {accessToken} = await auth.api.getAccessToken();
-      // console.log(accessToken, "token");
-      
       setIsDataLoading(true);
       try {
-        // ✅ দুটো fetch একসাথে চালানো হচ্ছে Promise.all দিয়ে, একটার জন্য অন্যটা wait করতে হচ্ছে না
         const [turfsRes, bookingsRes] = await Promise.all([
-          fetch(`http://localhost:5000/api/v1/user-items?email=${currentUserEmail}`),
-          fetch(`http://localhost:5000/api/my-bookings?email=${currentUserEmail}`),
+          fetch(`http://localhost:5000/api/v1/user-items?email=${userEmail}`),
+          fetch(`http://localhost:5000/api/my-bookings?email=${userEmail}`),
         ]);
         const turfsData = await turfsRes.json();
         const bookingsData = await bookingsRes.json();
@@ -94,17 +86,15 @@ export default function OwnerDashboardPage() {
     };
 
     fetchData();
-  }, [currentUserEmail, isAuthPending]);
+  }, [userEmail]);
 
   async function handleDelete(id: string, name: string): Promise<void> {
-    if (!currentUserEmail) return;
     if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return;
 
     try {
-      const response = await fetch(
-        `http://localhost:5000/api/ownerTurfs/${id}?email=${currentUserEmail}`,
-        { method: "DELETE" }
-      );
+      const response = await fetch(`http://localhost:5000/api/ownerTurfs/${id}?email=${userEmail}`, {
+        method: "DELETE",
+      });
       const data = await response.json();
       if (data.success) {
         setTurfs((prev) => prev.filter((t) => t._id !== id));
@@ -118,21 +108,20 @@ export default function OwnerDashboardPage() {
 
   async function handleUpdate(id: string): Promise<void> {
     const {data:token} = await authClient.token();
-    console.log(token?.token, "token"); 
-    if (!currentUserEmail) return;
+        console.log(token, "token"); 
     try {
       const response = await fetch(`http://localhost:5000/api/ownerTurfs/${id}`, {
         method: "PATCH",
-        headers: {
-           "Content-Type": "application/json",
-            authorization: `Bearer ${token?.token}`
-          },
+        headers: { 
+          "Content-Type": "application/json",
+         authorization: `Bearer ${token?.token}`
+        },
         body: JSON.stringify({
           name: editFormData.name,
           location: editFormData.location,
           sportType: editFormData.sportType,
           pricePerHour: editFormData.pricePerHour,
-          userEmail: currentUserEmail,
+          userEmail,
         }),
       });
       const data = await response.json();
@@ -183,34 +172,13 @@ export default function OwnerDashboardPage() {
     }
   }
 
-  if (isAuthPending) {
-    return (
-      <div className="text-center py-20">
-        <span className="animate-spin inline-block w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
-  if (!session) {
-    return (
-      <div className="text-center py-20 max-w-sm mx-auto">
-        <span className="text-4xl">🔒</span>
-        <h3 className="text-lg font-bold text-slate-800 mt-4">Access Denied</h3>
-        <p className="text-slate-500 text-sm mt-1 mb-4">You must be signed in to view your dashboard.</p>
-        <Link href="/login" className="bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-xl">
-          Go to Login
-        </Link>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-black text-slate-900">My Dashboard</h1>
           <p className="text-slate-500 text-sm">
-            Logged in as: <span className="text-emerald-600 font-semibold">{currentUserEmail}</span>
+            Logged in as: <span className="text-emerald-600 font-semibold">{userEmail}</span>
           </p>
         </div>
         <Link
@@ -377,10 +345,7 @@ export default function OwnerDashboardPage() {
                 ? booking.image
                 : "https://images.unsplash.com/photo-1517649763962-0c623066013b";
             return (
-              <div
-                key={booking._id}
-                className="bg-white border border-slate-200 rounded-3xl p-5 flex flex-col sm:flex-row gap-5 shadow-sm"
-              >
+              <div key={booking._id} className="bg-white border border-slate-200 rounded-3xl p-5 flex flex-col sm:flex-row gap-5 shadow-sm">
                 <div className="relative w-full sm:w-32 h-32 rounded-2xl overflow-hidden bg-slate-100 shrink-0">
                   <Image src={imageSrc} alt={booking.turfName} fill className="object-cover" />
                 </div>
@@ -391,11 +356,7 @@ export default function OwnerDashboardPage() {
                         {booking.sportType}
                       </span>
                       <span className="text-[11px] text-slate-400 font-medium">
-                        {new Date(booking.bookedAt).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
+                        {new Date(booking.bookedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                       </span>
                     </div>
                     <h3 className="text-lg font-black text-slate-900 mt-1">{booking.turfName}</h3>
@@ -403,9 +364,7 @@ export default function OwnerDashboardPage() {
                   </div>
                   <div className="border-t border-slate-50 pt-3 flex items-center justify-between">
                     <p className="text-base font-black text-emerald-600">৳{booking.pricePerHour}</p>
-                    <span className="bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1 rounded-lg border border-blue-100">
-                      Confirmed
-                    </span>
+                    <span className="bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1 rounded-lg border border-blue-100">Confirmed</span>
                   </div>
                 </div>
               </div>

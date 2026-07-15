@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { authClient } from "@/lib/auth-client";
 import type { SportType } from "@/types/turf";
 
 interface AdminTurf {
@@ -27,33 +25,23 @@ interface AdminUser {
 
 type Tab = "turfs" | "users";
 
-export default function AdminDashboardPage() {
-  const { data: session, isPending: isAuthPending } = authClient.useSession();
-  const currentUserEmail = session?.user?.email;
-  const currentUserRole = (session?.user as { role?: string } | undefined)
-    ?.role;
+interface AdminDashboardClientProps {
+  userEmail: string;
+}
 
+export default function AdminDashboardClient({ userEmail }: AdminDashboardClientProps) {
   const [activeTab, setActiveTab] = useState<Tab>("turfs");
   const [turfs, setTurfs] = useState<AdminTurf[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [isDataLoading, setIsDataLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    if (isAuthPending || !currentUserEmail || currentUserRole !== "admin") {
-      setIsDataLoading(false);
-      return;
-    }
-
     const fetchData = async (): Promise<void> => {
       setIsDataLoading(true);
       try {
         const [turfsRes, usersRes] = await Promise.all([
-          fetch(
-            `http://localhost:5000/api/admin/turfs?email=${currentUserEmail}`,
-          ),
-          fetch(
-            `http://localhost:5000/api/admin/users?email=${currentUserEmail}`,
-          ),
+          fetch(`http://localhost:5000/api/admin/turfs?email=${userEmail}`),
+          fetch(`http://localhost:5000/api/admin/users?email=${userEmail}`),
         ]);
         const turfsData = await turfsRes.json();
         const usersData = await usersRes.json();
@@ -68,27 +56,18 @@ export default function AdminDashboardPage() {
     };
 
     fetchData();
-  }, [currentUserEmail, currentUserRole, isAuthPending]);
+  }, [userEmail]);
 
-  async function handleStatusChange(
-    id: string,
-    status: "approved" | "rejected",
-  ): Promise<void> {
-    if (!currentUserEmail) return;
+  async function handleStatusChange(id: string, status: "approved" | "rejected"): Promise<void> {
     try {
-      const response = await fetch(
-        `http://localhost:5000/api/admin/turfs/${id}/status`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: currentUserEmail, status }),
-        },
-      );
+      const response = await fetch(`http://localhost:5000/api/admin/turfs/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: userEmail, status }),
+      });
       const data = await response.json();
       if (data.success) {
-        setTurfs((prev) =>
-          prev.map((t) => (t._id === id ? { ...t, status } : t)),
-        );
+        setTurfs((prev) => prev.map((t) => (t._id === id ? { ...t, status } : t)));
       } else {
         alert(data.message || "Failed to update status");
       }
@@ -97,25 +76,16 @@ export default function AdminDashboardPage() {
     }
   }
 
-  async function handleRoleChange(
-    id: string,
-    role: "user" | "admin",
-  ): Promise<void> {
-    if (!currentUserEmail) return;
+  async function handleRoleChange(id: string, role: "user" | "admin"): Promise<void> {
     try {
-      const response = await fetch(
-        `http://localhost:5000/api/admin/users/${id}/role`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: currentUserEmail, role }),
-        },
-      );
+      const response = await fetch(`http://localhost:5000/api/admin/users/${id}/role`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: userEmail, role }),
+      });
       const data = await response.json();
       if (data.success) {
-        setUsers((prev) =>
-          prev.map((u) => (u._id === id ? { ...u, role } : u)),
-        );
+        setUsers((prev) => prev.map((u) => (u._id === id ? { ...u, role } : u)));
       } else {
         alert(data.message || "Failed to update role");
       }
@@ -124,47 +94,15 @@ export default function AdminDashboardPage() {
     }
   }
 
-  if (isAuthPending) {
-    return (
-      <div className="text-center py-20">
-        <span className="animate-spin inline-block w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
-  if (!session || currentUserRole !== "admin") {
-    return (
-      <div className="text-center py-20 max-w-sm mx-auto">
-        <span className="text-4xl">🔒</span>
-        <h3 className="text-lg font-bold text-slate-800 mt-4">
-          Admin Access Only
-        </h3>
-        <p className="text-slate-500 text-sm mt-1 mb-4">
-          You don`t have permission to view this page.
-        </p>
-        <Link
-          href="/"
-          className="bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-xl"
-        >
-          Go Home
-        </Link>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <h1 className="text-2xl font-black text-slate-900 mb-6">
-        Admin Dashboard
-      </h1>
+      <h1 className="text-2xl font-black text-slate-900 mb-6">Admin Dashboard</h1>
 
       <div className="flex gap-2 mb-8 border-b border-slate-200">
         <button
           onClick={() => setActiveTab("turfs")}
           className={`px-4 py-2 text-sm font-bold border-b-2 -mb-px ${
-            activeTab === "turfs"
-              ? "border-emerald-600 text-emerald-600"
-              : "border-transparent text-slate-500"
+            activeTab === "turfs" ? "border-emerald-600 text-emerald-600" : "border-transparent text-slate-500"
           }`}
         >
           Turf Approvals
@@ -172,9 +110,7 @@ export default function AdminDashboardPage() {
         <button
           onClick={() => setActiveTab("users")}
           className={`px-4 py-2 text-sm font-bold border-b-2 -mb-px ${
-            activeTab === "users"
-              ? "border-emerald-600 text-emerald-600"
-              : "border-transparent text-slate-500"
+            activeTab === "users" ? "border-emerald-600 text-emerald-600" : "border-transparent text-slate-500"
           }`}
         >
           Manage Users
@@ -200,9 +136,7 @@ export default function AdminDashboardPage() {
               {turfs.map((turf) => (
                 <tr key={turf._id}>
                   <td className="px-4 py-3 font-semibold">{turf.title}</td>
-                  <td className="px-4 py-3 text-slate-500">
-                    {turf.ownerEmail}
-                  </td>
+                  <td className="px-4 py-3 text-slate-500">{turf.ownerEmail}</td>
                   <td className="px-4 py-3">
                     <span
                       className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
@@ -256,17 +190,11 @@ export default function AdminDashboardPage() {
                   <td className="px-4 py-3 capitalize">{u.role ?? "user"}</td>
                   <td className="px-4 py-3 text-right">
                     {u.role === "admin" ? (
-                      <button
-                        onClick={() => handleRoleChange(u._id, "user")}
-                        className="px-3 py-1 bg-slate-200 text-slate-700 text-xs font-bold rounded-lg"
-                      >
+                      <button onClick={() => handleRoleChange(u._id, "user")} className="px-3 py-1 bg-slate-200 text-slate-700 text-xs font-bold rounded-lg">
                         Revoke Admin
                       </button>
                     ) : (
-                      <button
-                        onClick={() => handleRoleChange(u._id, "admin")}
-                        className="px-3 py-1 bg-slate-900 text-white text-xs font-bold rounded-lg"
-                      >
+                      <button onClick={() => handleRoleChange(u._id, "admin")} className="px-3 py-1 bg-slate-900 text-white text-xs font-bold rounded-lg">
                         Make Admin
                       </button>
                     )}
