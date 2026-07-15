@@ -27,22 +27,26 @@ export default function ExploreTurfsPage() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [hasError, setHasError] = useState<boolean>(false);
 
+  // ⚡ Pagination এর জন্য স্টেট
+  const [page, setPage] = useState<number>(1);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const limit = 8; // প্রতি পেজে ৮টি করে কার্ড দেখাবে
+
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedSport, setSelectedSport] = useState<SportType | "all">("all");
   const [maxPrice, setMaxPrice] = useState<number>(5000);
   const [sortBy, setSortBy] = useState<"rating" | "priceLow" | "priceHigh">("rating");
-  
 
-
-  const fetchTurfs = useCallback(async (): Promise<void> => {
+  const fetchTurfs = useCallback(async (currentPage: number): Promise<void> => {
     setIsLoading(true);
     try {
-    
       const params = new URLSearchParams();
       if (searchQuery.trim() !== "") params.set("search", searchQuery);
       if (selectedSport !== "all") params.set("sportType", selectedSport);
       params.set("maxPrice", String(maxPrice));
       params.set("sortBy", sortBy);
+      params.set("page", String(currentPage));
+      params.set("limit", String(limit));
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/allTurfs?${params.toString()}`);
       const resData = await response.json();
@@ -62,8 +66,18 @@ export default function ExploreTurfsPage() {
           createdAt: new Date().toISOString(),
           status: item.status || "pending",
         }));
-        // ⚡ status filter client-side এই রাখা হলো, যেহেতু আগে বলা হয়েছিল এটা frontend-এই থাকবে
-        setTurfs(normalizedData.filter((t) => t.status === "approved"));
+
+        const approvedTurfs = normalizedData.filter((t) => t.status === "approved");
+        
+      
+        setTurfs(approvedTurfs);
+
+      
+        if (resData.data.length < limit) {
+          setHasMore(false);
+        } else {
+          setHasMore(true);
+        }
         setHasError(false);
       } else {
         setHasError(true);
@@ -76,17 +90,25 @@ export default function ExploreTurfsPage() {
     }
   }, [searchQuery, selectedSport, maxPrice, sortBy]);
 
-  // ✅ debounce — প্রতি keystroke এ না, বরং টাইপ করা থামার ৪০০ms পরে fetch হবে
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchTurfs();
+      setPage(1);
+      fetchTurfs(1);
     }, 400);
 
-    return () => clearTimeout(timer); // আগের timer বাতিল, নতুন keystroke এ
-  }, [fetchTurfs]);
+    return () => clearTimeout(timer);
+  }, [searchQuery, selectedSport, maxPrice, sortBy, fetchTurfs]);
+
+  // ⚡ পেজ নম্বর পরিবর্তন হলে এই ইফেক্টটি রান করবে
+  useEffect(() => {
+    if (page > 1) {
+      fetchTurfs(page);
+    }
+  }, [page, fetchTurfs]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">Explore Sports Arenas</h1>
@@ -102,6 +124,7 @@ export default function ExploreTurfsPage() {
         </Link>
       </div>
 
+      {/* Filters */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-10 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2 flex flex-col gap-1.5">
@@ -166,6 +189,7 @@ export default function ExploreTurfsPage() {
         </div>
       </div>
 
+      {/* Grid Content / Loading / Error states */}
       {isLoading ? (
         <div className="text-center py-20">
           <span className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin inline-block"></span>
@@ -176,11 +200,36 @@ export default function ExploreTurfsPage() {
           <p className="text-red-500 text-sm">Failed to load arenas. Please check if the server is running.</p>
         </div>
       ) : turfs.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {turfs.map((turf) => (
-            <TurfCard key={turf._id} turf={turf} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {turfs.map((turf) => (
+              <TurfCard key={turf._id} turf={turf} />
+            ))}
+          </div>
+
+          {/* ⚡ Simple Pagination Controller */}
+          <div className="flex items-center justify-center gap-4 mt-12 pt-6 border-t border-slate-100">
+            <button
+              onClick={() => setPage((p) => Math.max(p - 1, 1))}
+              disabled={page === 1}
+              className="px-4 py-2 text-sm font-bold border border-slate-200 text-slate-700 rounded-xl transition hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+            >
+              ← Previous
+            </button>
+            
+            <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg">
+              Page {page}
+            </span>
+
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={!hasMore}
+              className="px-4 py-2 text-sm font-bold border border-slate-200 text-slate-700 rounded-xl transition hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+            >
+              Next →
+            </button>
+          </div>
+        </>
       ) : (
         <div className="text-center py-20 border border-dashed border-slate-200 rounded-2xl bg-white">
           <span className="text-4xl">🔍</span>
