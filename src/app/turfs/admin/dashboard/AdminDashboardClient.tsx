@@ -94,6 +94,12 @@ export default function AdminDashboardClient({ userEmail }: AdminDashboardClient
     }
   }
 
+  function getStatusBadgeStyle(status: AdminTurf["status"]): string {
+    if (status === "approved") return "bg-emerald-100 text-emerald-600";
+    if (status === "rejected") return "bg-rose-100 text-rose-600";
+    return "bg-amber-100 text-amber-600";
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <h1 className="text-2xl font-black text-slate-900 mb-6">Admin Dashboard</h1>
@@ -122,88 +128,157 @@ export default function AdminDashboardClient({ userEmail }: AdminDashboardClient
           <span className="animate-spin inline-block w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full" />
         </div>
       ) : activeTab === "turfs" ? (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs font-bold text-slate-500 uppercase">
-              <tr>
-                <th className="px-4 py-3">Turf</th>
-                <th className="px-4 py-3">Owner</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {turfs.map((turf) => (
-                <tr key={turf._id}>
-                  <td className="px-4 py-3 font-semibold">{turf.title}</td>
-                  <td className="px-4 py-3 text-slate-500">{turf.ownerEmail}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
-                        turf.status === "approved"
-                          ? "bg-emerald-100 text-emerald-600"
-                          : turf.status === "rejected"
-                            ? "bg-rose-100 text-rose-600"
-                            : "bg-amber-100 text-amber-600"
-                      }`}
-                    >
-                      {turf.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right space-x-2">
-                    <button
-                      onClick={() => handleStatusChange(turf._id, "approved")}
-                      disabled={turf.status === "approved"}
-                      className="px-3 py-1 bg-emerald-600 disabled:bg-slate-200 text-white text-xs font-bold rounded-lg"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => handleStatusChange(turf._id, "rejected")}
-                      disabled={turf.status === "rejected"}
-                      className="px-3 py-1 bg-rose-600 disabled:bg-slate-200 text-white text-xs font-bold rounded-lg"
-                    >
-                      Reject
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          {/* ✅ মোবাইল (md এর নিচে): card layout, প্রতিটা turf আলাদা card */}
+          <div className="grid grid-cols-1 gap-4 md:hidden">
+            {turfs.map((turf) => (
+              <div key={turf._id} className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-bold text-slate-900">{turf.title}</p>
+                    <p className="text-xs text-slate-500">{turf.ownerEmail}</p>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase shrink-0 ${getStatusBadgeStyle(turf.status)}`}>
+                    {turf.status}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleStatusChange(turf._id, "approved")}
+                    disabled={turf.status === "approved"}
+                    className="flex-1 px-3 py-2 bg-emerald-600 disabled:bg-slate-200 text-white text-xs font-bold rounded-lg"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange(turf._id, "rejected")}
+                    disabled={turf.status === "rejected"}
+                    className="flex-1 px-3 py-2 bg-rose-600 disabled:bg-slate-200 text-white text-xs font-bold rounded-lg"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+            {turfs.length === 0 && (
+              <p className="text-center text-slate-400 text-sm py-10">No turfs found.</p>
+            )}
+          </div>
+
+          {/* ✅ md এবং তার ওপরে: আসল table, overflow-x-auto সহ (extra safety, ছোট ট্যাবলেটেও ভাঙবে না) */}
+          <div className="hidden md:block bg-white border border-slate-200 rounded-2xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-xs font-bold text-slate-500 uppercase">
+                  <tr>
+                    <th className="px-4 py-3">Turf</th>
+                    <th className="px-4 py-3">Owner</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {turfs.map((turf) => (
+                    <tr key={turf._id}>
+                      <td className="px-4 py-3 font-semibold">{turf.title}</td>
+                      <td className="px-4 py-3 text-slate-500">{turf.ownerEmail}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${getStatusBadgeStyle(turf.status)}`}>
+                          {turf.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right space-x-2">
+                        <button
+                          onClick={() => handleStatusChange(turf._id, "approved")}
+                          disabled={turf.status === "approved"}
+                          className="px-3 py-1 bg-emerald-600 disabled:bg-slate-200 text-white text-xs font-bold rounded-lg"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleStatusChange(turf._id, "rejected")}
+                          disabled={turf.status === "rejected"}
+                          className="px-3 py-1 bg-rose-600 disabled:bg-slate-200 text-white text-xs font-bold rounded-lg"
+                        >
+                          Reject
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs font-bold text-slate-500 uppercase">
-              <tr>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Email</th>
-                <th className="px-4 py-3">Role</th>
-                <th className="px-4 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {users.map((u) => (
-                <tr key={u._id}>
-                  <td className="px-4 py-3 font-semibold">{u.name}</td>
-                  <td className="px-4 py-3 text-slate-500">{u.email}</td>
-                  <td className="px-4 py-3 capitalize">{u.role ?? "user"}</td>
-                  <td className="px-4 py-3 text-right">
-                    {u.role === "admin" ? (
-                      <button onClick={() => handleRoleChange(u._id, "user")} className="px-3 py-1 bg-slate-200 text-slate-700 text-xs font-bold rounded-lg">
-                        Revoke Admin
-                      </button>
-                    ) : (
-                      <button onClick={() => handleRoleChange(u._id, "admin")} className="px-3 py-1 bg-slate-900 text-white text-xs font-bold rounded-lg">
-                        Make Admin
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          {/* ✅ মোবাইল: users card layout */}
+          <div className="grid grid-cols-1 gap-4 md:hidden">
+            {users.map((u) => (
+              <div key={u._id} className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3">
+                <div>
+                  <p className="font-bold text-slate-900">{u.name}</p>
+                  <p className="text-xs text-slate-500">{u.email}</p>
+                  <p className="text-xs text-slate-400 capitalize mt-1">Role: {u.role ?? "user"}</p>
+                </div>
+                {u.role === "admin" ? (
+                  <button
+                    onClick={() => handleRoleChange(u._id, "user")}
+                    className="w-full px-3 py-2 bg-slate-200 text-slate-700 text-xs font-bold rounded-lg"
+                  >
+                    Revoke Admin
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleRoleChange(u._id, "admin")}
+                    className="w-full px-3 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg"
+                  >
+                    Make Admin
+                  </button>
+                )}
+              </div>
+            ))}
+            {users.length === 0 && (
+              <p className="text-center text-slate-400 text-sm py-10">No users found.</p>
+            )}
+          </div>
+
+          {/* ✅ md এবং তার ওপরে: table */}
+          <div className="hidden md:block bg-white border border-slate-200 rounded-2xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-xs font-bold text-slate-500 uppercase">
+                  <tr>
+                    <th className="px-4 py-3">Name</th>
+                    <th className="px-4 py-3">Email</th>
+                    <th className="px-4 py-3">Role</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {users.map((u) => (
+                    <tr key={u._id}>
+                      <td className="px-4 py-3 font-semibold">{u.name}</td>
+                      <td className="px-4 py-3 text-slate-500">{u.email}</td>
+                      <td className="px-4 py-3 capitalize">{u.role ?? "user"}</td>
+                      <td className="px-4 py-3 text-right">
+                        {u.role === "admin" ? (
+                          <button onClick={() => handleRoleChange(u._id, "user")} className="px-3 py-1 bg-slate-200 text-slate-700 text-xs font-bold rounded-lg">
+                            Revoke Admin
+                          </button>
+                        ) : (
+                          <button onClick={() => handleRoleChange(u._id, "admin")} className="px-3 py-1 bg-slate-900 text-white text-xs font-bold rounded-lg">
+                            Make Admin
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
