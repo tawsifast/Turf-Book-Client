@@ -27,12 +27,14 @@ export default function BookNowButton({ turf }: { turf: Turf }) {
 
     setIsBooking(true);
 
+    const { data: token } = await authClient.token();
     try {
       // ব্যাকএন্ড API-তে বুকিং ডাটা পাঠানো হচ্ছে
       const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/bookings`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          authorization: `Bearer ${token?.token}`,
         },
         body: JSON.stringify({
           turfId: turf._id,

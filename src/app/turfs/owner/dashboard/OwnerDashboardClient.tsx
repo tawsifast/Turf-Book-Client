@@ -63,11 +63,16 @@ export default function OwnerDashboardClient({
     const fetchData = async (): Promise<void> => {
       setIsDataLoading(true);
       try {
+        const { data: token } = await authClient.token();
+        const headers = {
+          authorization: `Bearer ${token?.token}`,
+        };
         const [turfsRes, bookingsRes] = await Promise.all([
           fetch(
             `${process.env.NEXT_PUBLIC_SERVER_URL}/api/v1/user-items?email=${userEmail}`,
+            { headers },
           ),
-          fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/my-bookings?email=${userEmail}`),
+          fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/my-bookings?email=${userEmail}`, { headers }),
         ]);
         const turfsData = await turfsRes.json();
         const bookingsData = await bookingsRes.json();
@@ -95,11 +100,15 @@ export default function OwnerDashboardClient({
   async function handleDelete(id: string, name: string): Promise<void> {
     if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return;
 
+    const { data: token } = await authClient.token();
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SERVER_URL}/api/ownerTurfs/${id}?email=${userEmail}`,
         {
           method: "DELETE",
+          headers: {
+            authorization: `Bearer ${token?.token}`,
+          },
         },
       );
       const data = await response.json();

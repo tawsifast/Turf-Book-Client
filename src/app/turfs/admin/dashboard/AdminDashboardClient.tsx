@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { SportType } from "@/types/turf";
+import { authClient } from "@/lib/auth-client";
 
 interface AdminTurf {
   _id: string;
@@ -39,9 +40,13 @@ export default function AdminDashboardClient({ userEmail }: AdminDashboardClient
     const fetchData = async (): Promise<void> => {
       setIsDataLoading(true);
       try {
+        const { data: token } = await authClient.token();
+        const headers = {
+          authorization: `Bearer ${token?.token}`,
+        };
         const [turfsRes, usersRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/admin/turfs?email=${userEmail}`),
-          fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/admin/users?email=${userEmail}`),
+          fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/admin/turfs?email=${userEmail}`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/admin/users?email=${userEmail}`, { headers }),
         ]);
         const turfsData = await turfsRes.json();
         const usersData = await usersRes.json();
@@ -59,10 +64,14 @@ export default function AdminDashboardClient({ userEmail }: AdminDashboardClient
   }, [userEmail]);
 
   async function handleStatusChange(id: string, status: "approved" | "rejected"): Promise<void> {
+    const {data:token} = await authClient.token();
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/admin/turfs/${id}/status`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+           "Content-Type": "application/json",
+          authorization : `Bearer ${token?.token}`
+          },
         body: JSON.stringify({ email: userEmail, status }),
       });
       const data = await response.json();
@@ -77,10 +86,13 @@ export default function AdminDashboardClient({ userEmail }: AdminDashboardClient
   }
 
   async function handleRoleChange(id: string, role: "user" | "admin"): Promise<void> {
+    const {data:token} = await authClient.token();
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/admin/users/${id}/role`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json",
+        authorization : `Bearer ${token?.token}`
+         },
         body: JSON.stringify({ email: userEmail, role }),
       });
       const data = await response.json();
